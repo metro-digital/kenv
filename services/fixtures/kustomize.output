@@ -1,0 +1,137 @@
+apiVersion: v1
+data:
+  DEPLOYMENT_DATACENTER: be-gcw1
+  DEPLOYMENT_STAGE: pp
+  DRP_CF_HTTP_ADDR: 0.0.0.0
+  DRP_CF_HTTP_PORT: "8080"
+  DRP_CF_SERVICE: gosimple
+kind: ConfigMap
+metadata:
+  labels:
+    service: gosimple
+  name: gosimple
+  namespace: demo-pp
+---
+apiVersion: v1
+data:
+  BACKGROUND_COLOR: Z3JlZW4=
+  ENV: cHA=
+  TEST: c2FtcGxl
+kind: Secret
+metadata:
+  name: gosimple-application-secrets
+  namespace: demo-pp
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    service: gosimple
+  name: gosimple
+  namespace: demo-pp
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    service: gosimple
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    service: gosimple
+  name: demo-gosimple
+  namespace: demo-pp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      service: gosimple
+  template:
+    metadata:
+      labels:
+        service: gosimple
+    spec:
+      containers:
+      - env:
+        - name: DRP_CF_KUBERNETES_MINION_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: DRP_CF_KUBERNETES_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: DRP_CF_KUBERNETES_HOST_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+        - name: DRP_CF_KUBERNETES_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: DRP_CF_KUBERNETES_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: COMMIT_SHA
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels['repository.commit_sha']
+        envFrom:
+        - configMapRef:
+            name: gosimple
+        - secretRef:
+            name: gosimple-application-secrets
+        image: gosimple
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /.well-known/live
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: gosimple
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /.well-known/ready
+            port: 8080
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: 600m
+            memory: 300Mi
+          requests:
+            cpu: 20m
+            memory: 200Mi
+      imagePullSecrets:
+      - name: dockerlogin
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: gosimple
+  namespace: demo-pp
+spec:
+  rules:
+  - host: my-host.io
+    http:
+      paths:
+      - backend:
+          serviceName: gosimple
+          servicePort: 80
