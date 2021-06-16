@@ -48,7 +48,7 @@ func InitKustomize() (*Kustomize, error) {
 }
 
 func (k *Kustomize) GetVars(input string) ([]Vars, error) {
-	args := []string{"build", "--enable-alpha-plugins", input}
+	args := []string{"build", "--enable_alpha_plugins", input}
 	cmd := ExecCommand("kustomize", args...)
 
 	var stdout, stderr bytes.Buffer
