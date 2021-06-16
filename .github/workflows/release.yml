@@ -19,10 +19,10 @@ jobs:
           GOOS=linux GOARCH=amd64 go build -o=.github/workflows/kenv.linux.amd64 ./main/
       - uses: actions/setup-node@v2
         with:
-          node-version: "12.x"
+          node-version: "14.x"
       - run: npm install conventional-changelog-conventionalcommits
         working-directory: ./.github/workflows
-      - run: npx semantic-release
+      - run: npx semantic-release@17.4.3
         working-directory: ./.github/workflows
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
