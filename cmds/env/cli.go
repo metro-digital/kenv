@@ -17,7 +17,6 @@
 package env
 
 import (
-	"log"
 	"os"
 
 	"github.com/metro-digital/kenv/services"
@@ -37,8 +36,12 @@ func Cli() *cobra.Command {
 	}
 
 	prepare.Flags().StringP(inputFlag, "i", "", "Input directory for stage (e.g. waas-config/environments/be-gcw1/pp)")
-	prepare.Flags().StringP(keyFlag, "k", "", "Private GPG key, base64 encoded")
+	// nolint:errcheck
+	prepare.MarkFlagRequired(inputFlag)
+	prepare.Flags().StringP(keyFlag, "k", "", "Private GPG key, base64 encoded (optional)")
 	prepare.Flags().StringP(outputFlag, "o", "", "Output dotenv file")
+	// nolint:errcheck
+	prepare.MarkFlagRequired(outputFlag)
 
 	return prepare
 }
@@ -53,15 +56,16 @@ func prepareRun(cmd *cobra.Command, args []string) {
 	output, err := cmd.Flags().GetString(outputFlag)
 	check(err)
 
-	if input == "" || key == "" || output == "" {
-		log.Fatal("All parameters are mandatory")
+	var gpg *services.Gpg
+	var keyID string
+
+	if key != "" {
+		gpg, err = services.InitGpg()
+		check(err)
+
+		keyID, err = gpg.ImportKey(key)
+		check(err)
 	}
-
-	gpg, err := services.InitGpg()
-	check(err)
-
-	keyID, err := gpg.ImportKey(key)
-	check(err)
 
 	kustomize, err := services.InitKustomize()
 	check(err)
@@ -84,8 +88,10 @@ func prepareRun(cmd *cobra.Command, args []string) {
 	err = f.Sync()
 	check(err)
 
-	// nolint:errcheck
-	defer gpg.DeleteKey(keyID)
+	if key != "" {
+		// nolint:errcheck
+		defer gpg.DeleteKey(keyID)
+	}
 }
 
 func check(e error) {
