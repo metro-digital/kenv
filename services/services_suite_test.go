@@ -18,15 +18,15 @@
 package services_test
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+  . "github.com/onsi/ginkgo"
+  . "github.com/onsi/gomega"
 
-	"testing"
+  "testing"
 )
 
 func TestServices(t *testing.T) {
-	RegisterFailHandler(Fail)
-	RunSpecs(t, "Services Suite")
+  RegisterFailHandler(Fail)
+  RunSpecs(t, "Services Suite")
 }
 
 type afterSuiteFunc func()
@@ -34,11 +34,11 @@ type afterSuiteFunc func()
 var afterSuiteFuncs []afterSuiteFunc = []afterSuiteFunc{}
 
 func RunAfterSuite(f afterSuiteFunc) {
-	afterSuiteFuncs = append(afterSuiteFuncs, f)
+  afterSuiteFuncs = append(afterSuiteFuncs, f)
 }
 
 var _ = AfterSuite(func() {
-	for _, f := range afterSuiteFuncs {
-		f()
-	}
+  for _, f := range afterSuiteFuncs {
+    f()
+  }
 })

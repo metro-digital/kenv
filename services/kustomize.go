@@ -16,84 +16,84 @@
 package services
 
 import (
-	"bytes"
-	"encoding/base64"
-	"errors"
-	"fmt"
-	"os/exec"
+  "bytes"
+  "encoding/base64"
+  "errors"
+  "fmt"
+  "os/exec"
 
-	"go.uber.org/multierr"
-	"gopkg.in/yaml.v3"
+  "go.uber.org/multierr"
+  "gopkg.in/yaml.v3"
 )
 
 type Vars struct {
-	Kind string            `yaml:"kind"`
-	Data map[string]string `yaml:"data"`
+  Kind string            `yaml:"kind"`
+  Data map[string]string `yaml:"data"`
 }
 
 type Kustomize struct {
-	Binary string
+  Binary string
 }
 
 func InitKustomize() (*Kustomize, error) {
-	path, err := exec.LookPath("kustomize")
+  path, err := exec.LookPath("kustomize")
 
-	if err != nil || path == "" {
-		return nil, errors.New("kustomize binary not found")
-	}
+  if err != nil || path == "" {
+    return nil, errors.New("kustomize binary not found")
+  }
 
-	return &Kustomize{
-		Binary: path,
-	}, nil
+  return &Kustomize{
+    Binary: path,
+  }, nil
 }
 
 func (k *Kustomize) GetVars(input string) ([]Vars, error) {
-	args := []string{"build", "--enable_alpha_plugins", input}
-	cmd := ExecCommand("kustomize", args...)
+  args := []string{"build", "--enable_alpha_plugins", input}
+  cmd := ExecCommand("kustomize", args...)
 
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
+  var stdout, stderr bytes.Buffer
+  cmd.Stdout = &stdout
+  cmd.Stderr = &stderr
+  err := cmd.Run()
 
-	allOutput := stdout.String()
-	docs := parse([]byte(allOutput))
-	if err != nil {
-		err = multierr.Combine(
-			errors.New(stderr.String()),
-			errors.New(fmt.Sprint("kustomize failed to run: ", err)),
-		)
-	}
+  allOutput := stdout.String()
+  docs := parse([]byte(allOutput))
+  if err != nil {
+    err = multierr.Combine(
+      errors.New(stderr.String()),
+      errors.New(fmt.Sprint("kustomize failed to run: ", err)),
+    )
+  }
 
-	return docs, err
+  return docs, err
 }
 
 func parse(source []byte) []Vars {
-	result := []Vars{}
+  result := []Vars{}
 
-	dec := yaml.NewDecoder(bytes.NewReader(source))
-	for {
-		var doc Vars
-		if dec.Decode(&doc) != nil {
-			break
-		}
+  dec := yaml.NewDecoder(bytes.NewReader(source))
+  for {
+    var doc Vars
+    if dec.Decode(&doc) != nil {
+      break
+    }
 
-		if doc.Kind == "ConfigMap" {
-			result = append(result, doc)
-		}
+    if doc.Kind == "ConfigMap" {
+      result = append(result, doc)
+    }
 
-		if doc.Kind == "Secret" {
-			tmp := Vars{Kind: doc.Kind, Data: map[string]string{}}
-			for k, v := range doc.Data {
-				decoded, err := base64.StdEncoding.DecodeString(v)
-				if err != nil {
-					panic(err)
-				}
-				tmp.Data[k] = string(decoded)
-			}
-			result = append(result, tmp)
-		}
-	}
+    if doc.Kind == "Secret" {
+      tmp := Vars{Kind: doc.Kind, Data: map[string]string{}}
+      for k, v := range doc.Data {
+        decoded, err := base64.StdEncoding.DecodeString(v)
+        if err != nil {
+          panic(err)
+        }
+        tmp.Data[k] = string(decoded)
+      }
+      result = append(result, tmp)
+    }
+  }
 
-	return result
+  return result
 }

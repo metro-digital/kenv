@@ -17,24 +17,24 @@
 package main
 
 import (
-	"github.com/metro-digital/kenv/cmds/env"
-	"github.com/spf13/cobra"
+  "github.com/metro-digital/kenv/cmds/env"
+  "github.com/spf13/cobra"
 )
 
 func initApp() *cobra.Command {
-	rootCmd := &cobra.Command{
-		Use:   "kenv",
-		Short: "kenv is a utility for preparing dotenv file from kustomize config.",
-		Args:  cobra.NoArgs,
-	}
+  rootCmd := &cobra.Command{
+    Use:   "kenv",
+    Short: "kenv is a utility for preparing dotenv file from kustomize config.",
+    Args:  cobra.NoArgs,
+  }
 
-	rootCmd.AddCommand(env.Cli())
+  rootCmd.AddCommand(env.Cli())
 
-	return rootCmd
+  return rootCmd
 }
 
 func main() {
-	app := initApp()
-	// nolint:errcheck
-	app.Execute()
+  app := initApp()
+  // nolint:errcheck
+  app.Execute()
 }
