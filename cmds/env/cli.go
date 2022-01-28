@@ -17,10 +17,10 @@
 package env
 
 import (
-  "os"
+	"os"
 
-  "github.com/metro-digital/kenv/services"
-  "github.com/spf13/cobra"
+	"github.com/metro-digital/kenv/services"
+	"github.com/spf13/cobra"
 )
 
 const inputFlag = "input-directory"
@@ -28,74 +28,74 @@ const keyFlag = "key"
 const outputFlag = "output"
 
 func Cli() *cobra.Command {
-  prepare := &cobra.Command{
-    Use:   "prepare",
-    Short: "Prepare environment variables (dotenv file) based on the kustomize output.",
-    Args:  cobra.NoArgs,
-    Run:   prepareRun,
-  }
+	prepare := &cobra.Command{
+		Use:   "prepare",
+		Short: "Prepare environment variables (dotenv file) based on the kustomize output.",
+		Args:  cobra.NoArgs,
+		Run:   prepareRun,
+	}
 
-  prepare.Flags().StringP(inputFlag, "i", "", "Input directory for stage (e.g. waas-config/environments/be-gcw1/pp)")
-  // nolint:errcheck
-  prepare.MarkFlagRequired(inputFlag)
-  prepare.Flags().StringP(keyFlag, "k", "", "Private GPG key, base64 encoded (optional)")
-  prepare.Flags().StringP(outputFlag, "o", "", "Output dotenv file")
-  // nolint:errcheck
-  prepare.MarkFlagRequired(outputFlag)
+	prepare.Flags().StringP(inputFlag, "i", "", "Input directory for stage (e.g. waas-config/environments/be-gcw1/pp)")
+	// nolint:errcheck
+	prepare.MarkFlagRequired(inputFlag)
+	prepare.Flags().StringP(keyFlag, "k", "", "Private GPG key, base64 encoded (optional)")
+	prepare.Flags().StringP(outputFlag, "o", "", "Output dotenv file")
+	// nolint:errcheck
+	prepare.MarkFlagRequired(outputFlag)
 
-  return prepare
+	return prepare
 }
 
 func prepareRun(cmd *cobra.Command, args []string) {
-  input, err := cmd.Flags().GetString(inputFlag)
-  check(err)
+	input, err := cmd.Flags().GetString(inputFlag)
+	check(err)
 
-  key, err := cmd.Flags().GetString(keyFlag)
-  check(err)
+	key, err := cmd.Flags().GetString(keyFlag)
+	check(err)
 
-  output, err := cmd.Flags().GetString(outputFlag)
-  check(err)
+	output, err := cmd.Flags().GetString(outputFlag)
+	check(err)
 
-  var gpg *services.Gpg
-  var keyID string
+	var gpg *services.Gpg
+	var keyID string
 
-  if key != "" {
-    gpg, err = services.InitGpg()
-    check(err)
+	if key != "" {
+		gpg, err = services.InitGpg()
+		check(err)
 
-    keyID, err = gpg.ImportKey(key)
-    check(err)
-  }
+		keyID, err = gpg.ImportKey(key)
+		check(err)
+	}
 
-  kustomize, err := services.InitKustomize()
-  check(err)
+	kustomize, err := services.InitKustomize()
+	check(err)
 
-  docs, err := kustomize.GetVars(input)
-  check(err)
+	docs, err := kustomize.GetVars(input)
+	check(err)
 
-  f, err := os.Create(output)
-  check(err)
+	f, err := os.Create(output)
+	check(err)
 
-  defer f.Close()
+	defer f.Close()
 
-  for _, doc := range docs {
-    for k, v := range doc.Data {
-      _, err := f.WriteString(k + "=" + v + "\n")
-      check(err)
-    }
-  }
+	for _, doc := range docs {
+		for k, v := range doc.Data {
+			_, err := f.WriteString(k + "=" + v + "\n")
+			check(err)
+		}
+	}
 
-  err = f.Sync()
-  check(err)
+	err = f.Sync()
+	check(err)
 
-  if key != "" {
-    // nolint:errcheck
-    defer gpg.DeleteKey(keyID)
-  }
+	if key != "" {
+		// nolint:errcheck
+		defer gpg.DeleteKey(keyID)
+	}
 }
 
 func check(e error) {
-  if e != nil {
-    panic(e)
-  }
+	if e != nil {
+		panic(e)
+	}
 }
