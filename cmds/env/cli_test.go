@@ -18,69 +18,69 @@
 package env_test
 
 import (
-	"io/ioutil"
-	"os"
-	"os/exec"
-	"sort"
-	"strings"
+  "io/ioutil"
+  "os"
+  "os/exec"
+  "sort"
+  "strings"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"github.com/spf13/cobra"
+  . "github.com/onsi/ginkgo"
+  . "github.com/onsi/gomega"
+  "github.com/spf13/cobra"
 
-	"github.com/metro-digital/kenv/cmds/env"
-	"github.com/metro-digital/kenv/services"
+  "github.com/metro-digital/kenv/cmds/env"
+  "github.com/metro-digital/kenv/services"
 )
 
 var _ = Describe("PrepareRun()", func() {
-	var cmd *cobra.Command
+  var cmd *cobra.Command
 
-	BeforeEach(func() {
-		os.Remove("vars")
+  BeforeEach(func() {
+    os.Remove("vars")
 
-		cmd = env.Cli()
-		cmd.SetArgs([]string{"--input-directory", "waas-config/environments/be-gcw1/pp", "--key", "1234", "--output", "vars"})
+    cmd = env.Cli()
+    cmd.SetArgs([]string{"--input-directory", "waas-config/environments/be-gcw1/pp", "--key", "1234", "--output", "vars"})
 
-		services.ExecCommand = fakeExecCommand
-	})
+    services.ExecCommand = fakeExecCommand
+  })
 
-	AfterEach(func() {
-		os.Remove("vars")
+  AfterEach(func() {
+    os.Remove("vars")
 
-		services.ExecCommand = exec.Command
-	})
+    services.ExecCommand = exec.Command
+  })
 
-	Context("when command is executed and everyting is ok", func() {
-		It("creates a dotenv file", func() {
-			testCase = "case1"
+  Context("when command is executed and everyting is ok", func() {
+    It("creates a dotenv file", func() {
+      testCase = "case1"
 
-			cmd.Execute()
+      cmd.Execute()
 
-			content, _ := ioutil.ReadFile("vars")
-			vars := strings.Split(string(content), "\n")
-			sort.Strings(vars)
+      content, _ := ioutil.ReadFile("vars")
+      vars := strings.Split(string(content), "\n")
+      sort.Strings(vars)
 
-			Expect(len(vars)).To(Equal(9))
-			Expect(vars[1]).To(Equal("BACKGROUND_COLOR=green"))
-		})
-	})
+      Expect(len(vars)).To(Equal(9))
+      Expect(vars[1]).To(Equal("BACKGROUND_COLOR=green"))
+    })
+  })
 
-	Context("when command is executed but key cannot be imported", func() {
-		It("exits with error", func() {
-			testCase = "case2"
+  Context("when command is executed but key cannot be imported", func() {
+    It("exits with error", func() {
+      testCase = "case2"
 
-			var errMsg string
+      var errMsg string
 
-			func() {
-				defer func() {
-					r := recover()
-					err, _ := r.(error)
-					errMsg = err.Error()
-				}()
-				cmd.Execute()
-			}()
+      func() {
+        defer func() {
+          r := recover()
+          err, _ := r.(error)
+          errMsg = err.Error()
+        }()
+        cmd.Execute()
+      }()
 
-			Expect(errMsg).To(Equal("unable to import key"))
-		})
-	})
+      Expect(errMsg).To(Equal("unable to import key"))
+    })
+  })
 })
